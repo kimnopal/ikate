@@ -1,0 +1,504 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor Rules - Laravel React Inertia Stack
+
+## Tech Stack Overview
+- **Backend**: Laravel 10+
+- **Frontend**: React 18+
+- **Bridge**: Inertia.js
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Language**: TypeScript (preferred)
+
+## Laravel Backend Best Practices
+
+### File Structure & Organization
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   ├── Middleware/
+│   ├── Requests/
+│   └── Resources/
+├── Models/
+├── Services/
+└── Enums/
+```
+
+### Controller Guidelines
+- Use Resource Controllers when possible
+- Keep controllers thin, move business logic to Services
+- Use Form Request classes for validation
+- Return Inertia responses consistently
+
+```php
+// Good
+class UserController extends Controller
+{
+    public function index()
+    {
+        return Inertia::render('Users/Index', [
+            'users' => UserResource::collection(User::paginate(10))
+        ]);
+    }
+}
+
+// Use Form Requests
+class StoreUserRequest extends FormRequest
+{
+    public function rules()
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+        ];
+    }
+}
+```
+
+### Model Guidelines
+- Use Eloquent relationships properly
+- Implement Resource classes for API responses
+- Use mutators and accessors for data transformation
+- Add proper fillable/guarded properties
+
+```php
+class User extends Model
+{
+    protected $fillable = ['name', 'email'];
+    
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'created_at' => 'datetime',
+    ];
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+}
+```
+
+### Service Layer
+- Create service classes for complex business logic
+- Use dependency injection
+- Make services testable
+
+```php
+class UserService
+{
+    public function createUser(array $data): User
+    {
+        return User::create($data);
+    }
+}
+```
+
+## React Frontend Best Practices
+
+### Component Structure
+```
+resources/js/
+├── Components/
+│   ├── ui/              # shadcn components
+│   ├── Forms/
+│   ├── Tables/
+│   └── Layout/
+├── Pages/
+├── Hooks/
+├── Utils/
+└── Types/
+```
+
+### Component Guidelines
+- Use TypeScript interfaces for props
+- Implement proper error boundaries
+- Use React.memo for performance optimization
+- Follow the container/presentational pattern
+
+```tsx
+// Good component structure
+interface UserListProps {
+  users: User[];
+  onUserSelect: (user: User) => void;
+}
+
+const UserList: React.FC<UserListProps> = React.memo(({ users, onUserSelect }) => {
+  return (
+    <div className="space-y-4">
+      {users.map(user => (
+        <UserCard 
+          key={user.id} 
+          user={user} 
+          onClick={() => onUserSelect(user)} 
+        />
+      ))}
+    </div>
+  );
+});
+```
+
+### Custom Hooks
+- Create reusable logic in custom hooks
+- Use proper dependency arrays
+- Handle loading and error states
+
+```tsx
+const useUsers = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await router.get('/users');
+      setUsers(response.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { users, loading, error, fetchUsers };
+};
+```
+
+## Inertia.js Best Practices
+
+### Page Components
+- Use Inertia's Head component for meta tags
+- Implement proper props typing
+- Handle shared data properly
+
+```tsx
+import { Head } from '@inertiajs/react';
+
+interface UsersPageProps {
+  users: PaginatedResponse<User>;
+  filters: UserFilters;
+}
+
+const Users: React.FC<UsersPageProps> = ({ users, filters }) => {
+  return (
+    <>
+      <Head title="Users Management" />
+      <Layout>
+        <UserList users={users.data} />
+        <Pagination links={users.links} />
+      </Layout>
+    </>
+  );
+};
+```
+
+### Form Handling
+- Use Inertia's useForm hook
+- Implement proper validation feedback
+- Handle form submission states
+
+```tsx
+const CreateUser: React.FC = () => {
+  const { data, setData, post, processing, errors } = useForm({
+    name: '',
+    email: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post('/users', {
+      onSuccess: () => {
+        // Handle success
+      },
+      onError: () => {
+        // Handle errors
+      }
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        value={data.name}
+        onChange={(e) => setData('name', e.target.value)}
+        error={errors.name}
+        disabled={processing}
+      />
+    </form>
+  );
+};
+```
+
+## Tailwind CSS Best Practices
+
+### Class Organization
+- Use Tailwind's utility classes
+- Create component classes for repeated patterns
+- Use @apply directive sparingly
+
+```css
+/* Good - Component classes */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors;
+}
+
+.card {
+  @apply bg-white shadow-sm border rounded-lg p-6;
+}
+```
+
+### Responsive Design
+```tsx
+// Good responsive patterns
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div className="p-4 md:p-6">
+    <h3 className="text-lg md:text-xl font-semibold">Title</h3>
+  </div>
+</div>
+```
+
+## shadcn/ui Integration
+
+### Component Usage
+- Import components from @/components/ui
+- Customize components through className props
+- Use proper component composition
+
+```tsx
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const UserForm = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Create User</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Input placeholder="Name" />
+        <Button type="submit" className="w-full">
+          Create User
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+```
+
+## TypeScript Best Practices
+
+### Type Definitions
+```typescript
+// Define proper interfaces
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  links: PaginationLink[];
+  meta: PaginationMeta;
+}
+
+// Use utility types
+type CreateUserData = Omit<User, 'id' | 'created_at' | 'updated_at'>;
+type UpdateUserData = Partial<CreateUserData>;
+```
+
+### Inertia Props Types
+```typescript
+// Create global types for Inertia
+declare global {
+  namespace Inertia {
+    interface PageProps {
+      user: User;
+      flash: {
+        message?: string;
+        error?: string;
+      };
+    }
+  }
+}
+```
+
+## Performance Optimization
+
+### Laravel Optimization
+- Use eager loading to prevent N+1 queries
+- Implement proper caching strategies
+- Use database indexes appropriately
+
+```php
+// Good - Eager loading
+$users = User::with('posts', 'roles')->paginate(10);
+
+// Good - Caching
+Cache::remember('users.active', 3600, function () {
+    return User::where('active', true)->get();
+});
+```
+
+### React Optimization
+- Use React.memo for expensive components
+- Implement proper key props for lists
+- Use useMemo and useCallback appropriately
+
+```tsx
+const ExpensiveComponent = React.memo<Props>(({ data }) => {
+  const processedData = useMemo(() => {
+    return data.map(item => processItem(item));
+  }, [data]);
+
+  return <div>{/* render */}</div>;
+});
+```
+
+## Error Handling
+
+### Laravel Error Handling
+```php
+// Use try-catch blocks
+try {
+    $user = User::create($request->validated());
+    return redirect()->route('users.index')
+        ->with('success', 'User created successfully');
+} catch (Exception $e) {
+    return back()->with('error', 'Failed to create user');
+}
+```
+
+### React Error Handling
+```tsx
+const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      setHasError(true);
+      console.error('Error caught:', error);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return <div>Something went wrong.</div>;
+  }
+
+  return <>{children}</>;
+};
+```
+
+## Testing Guidelines
+
+### Laravel Testing
+```php
+// Feature tests
+class UserControllerTest extends TestCase
+{
+    public function test_can_create_user()
+    {
+        $response = $this->post('/users', [
+            'name' => 'John Doe',
+            'email' => 'john@example.com'
+        ]);
+
+        $response->assertRedirect('/users');
+        $this->assertDatabaseHas('users', ['email' => 'john@example.com']);
+    }
+}
+```
+
+### React Testing
+```tsx
+// Jest + React Testing Library
+import { render, screen } from '@testing-library/react';
+import UserList from './UserList';
+
+test('renders user list', () => {
+  const users = [
+    { id: 1, name: 'John Doe', email: 'john@example.com' }
+  ];
+
+  render(<UserList users={users} />);
+  expect(screen.getByText('John Doe')).toBeInTheDocument();
+});
+```
+
+## Security Best Practices
+
+### Laravel Security
+- Use CSRF protection
+- Validate all inputs
+- Use proper authentication middleware
+- Sanitize output
+
+```php
+// Good - CSRF protection is automatic with Inertia
+// Good - Use validation
+$request->validate([
+    'email' => 'required|email|unique:users',
+    'password' => 'required|min:8|confirmed'
+]);
+```
+
+### React Security
+- Sanitize user input
+- Use proper content security policies
+- Avoid dangerouslySetInnerHTML unless necessary
+
+## File Naming Conventions
+
+### Laravel
+- Controllers: `UserController.php`
+- Models: `User.php`
+- Migrations: `2024_01_01_000000_create_users_table.php`
+- Requests: `StoreUserRequest.php`
+
+### React
+- Components: `UserList.tsx`
+- Pages: `Users/Index.tsx`
+- Hooks: `useUsers.ts`
+- Types: `user.types.ts`
+
+## Git & Development Workflow
+
+### Commit Messages
+```
+feat: add user management functionality
+fix: resolve pagination issue in user list
+refactor: extract user service logic
+docs: update API documentation
+```
+
+### Branch Naming
+- `feature/user-management`
+- `fix/pagination-bug`
+- `refactor/user-service`
+
+## Code Review Checklist
+
+### Before Submitting
+- [ ] Code follows established patterns
+- [ ] Tests are written and passing
+- [ ] Types are properly defined
+- [ ] Error handling is implemented
+- [ ] Performance considerations addressed
+- [ ] Security best practices followed
+- [ ] Documentation updated if needed
+
+### Review Points
+- [ ] Business logic is in appropriate layers
+- [ ] Components are properly abstracted
+- [ ] Database queries are optimized
+- [ ] User experience is smooth
+- [ ] Code is maintainable and readable
