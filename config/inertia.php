@@ -17,7 +17,7 @@ return [
 
     'ssr' => [
         'enabled' => true,
-        'url' => env('APP_ENV') === 'production' ? 'https://ikate.vercel.app' : 'http://127.0.0.1:13714',
+        'url' => 'http://127.0.0.1:13714',
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],
