@@ -1,6 +1,8 @@
 {
     "version": 2,
     "framework": null,
+    "buildCommand": "npm run vercel-build",
+    "outputDirectory": "public",
     "functions": {
         "api/index.php": { "runtime": "vercel-php@0.6.0" }
     },
@@ -14,6 +16,7 @@
         "APP_ENV": "production",
         "APP_DEBUG": "true",
         "APP_URL": "https://ikate.vercel.app",
+        "ASSET_URL": "https://ikate.vercel.app",
         "APP_KEY": "base64:z7Po3je6m/QKy4UUAJhTWaxSKYYD0xC/QUeGEJYLjgM=",
 
         "APP_CONFIG_CACHE": "/tmp/config.php",
