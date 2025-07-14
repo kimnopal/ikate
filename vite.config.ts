@@ -23,7 +23,7 @@ export default defineConfig({
         },
     },
     build: {
-        outDir: 'public/build',
+        outDir: 'build',
         rollupOptions: {
             output: {
                 manualChunks: undefined,
